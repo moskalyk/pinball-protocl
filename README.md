@@ -29,7 +29,7 @@ const req = (datum, params) => {
         let now = Date.now()
         while(true){
             if(now >= params.time){
-                if(params.exe == ExeCodes.BEST) vfaas.aPath(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
+                if(params.exe == ExeCodes.BEST) vfaas.send(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
             }
         }
     */
@@ -39,21 +39,20 @@ const req = (datum, params) => {
         let now = Date.now()
         while(true){
             if(now < (Date.now() - params.timeout)){
-                vfaas.aPath(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
+                vfaas.send(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
             }
         }
     */
     
 }
 
-vfaas.aPath(req, {timeout?: 30000, time?: <iso>, exe: EXE.Best, dest?: '<end>'})
-
+vfaas.aPath(req)
 
 vfaas.aBoot((boot, err) => {
     if(err) console.log(err)
     else {
         console.log('running')
-        vfaas.webSocket.send('req', JSON.stringify({ status: StatusCodes.TERMINAL_MESSAGE, data: [4, 0] }))
+        vfaas.webSocket.send('req', JSON.stringify({ status: StatusCodes.TERMINAL_MESSAGE, data: [4, 0] }), {timeout?: 30000, time?: <iso>, exe: EXE.Best, dest?: '<end>'})
     }
 })
 
