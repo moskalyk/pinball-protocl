@@ -2,6 +2,8 @@ class VFAASNetSocket {
     socket;
     notConnected
     isFrontendClient;
+    deletedChannels = []
+    deletedBroadcasts = []
     constructor(url, protocol){
       try{
           this.notConnected = false;
@@ -34,15 +36,18 @@ class VFAASNetSocket {
         else this.socket.write(JSON.stringify({channel: channel, msg: message}))
     }
     
-    on(channel, func) {
+    on(channel, func, errCB) {
         if(this.isFrontendClient){
             this.socket.onmessage = event => {
-                const d = JSON.parse(event.data)
-                console.log()
-                if(d.channel == channel) func(d)
-                else if(d.channel == '*') func(d)
+                try{
+                    const d = JSON.parse(event.data)
+                    console.log()
+                    if(d.channel == channel) func(d)
+                    else if(d.channel == '*') func(d)
+                }catch(err){
+                    errCB(null, { stack: [39], err: err })
+                }
             }
-            
         } else {
             this.socket.on('data', (datum) => {
                 console.log()
@@ -63,12 +68,14 @@ class VFAASNetSocket {
                             console.log(data)
                             this.socket.write(JSON.stringify({channel: '*', msg: 'message'}))
                         } else {
-                            if(channel == data.channel){
+                            if(!this.deletedChannels.includes(data.channel) && channel == data.channel){
                                 func(data)
-                            } else if(data.channel == '*') func(data)
+                            } else if(!this.deletedBroadcasts.includes(channel) && data.channel == '*') {
+                                func(data)
+                            }
                         }
                     }catch(err){
-                        console.log(err)
+                        errCB(null, { stack: [37], err: err })
                     }
                 }
                 
@@ -82,38 +89,49 @@ class VFAASNetSocket {
             })
         }
     }
+    
+    delete(channel, cb, force) {
+        this.deletedChannels.push(channel)
+        if(force) this.deletedBroadcasts.push(channel)
+        cb()
+    }
 }
 
 class VFAASNet {
   webSocket;
-
+  bootCB;
   constructor({protocol, host, port }) {
     this.webSocket = new VFAASNetSocket(`${host}:${port}`, protocol)
+    this.bootCB = () =>  {
+      console.log('please connect a path')
+    } ;
   }
 
   aBoot(cb) {
     const msg = 'connection created'
-    console.log()
+    this.bootCB = cb
     if(this.webSocket.isFrontendClient){
         this.webSocket.socket.onopen = () => {
-            cb({boot: this, msg: msg})
+            cb({boot: this, msg: msg}, null)
         }
     } else {
         this.webSocket.socket.on('connect', () => {
             console.log('client connected')
-            cb({boot: this, msg: msg})
+            cb({boot: this, msg: msg}, null)
         })
     }
   }
 
-  aPath(func) {
+  aPath(func, params) {
     let val = func.name
-    this.webSocket.on(val, (message) => func(message))
+    setTimeout(() => this.webSocket.on(val, (message) => func(message, params), this.bootCB), 0)
     return this
   }
   
-  aDelete(func) {
-      // TODO: 
+  anOmit(funcName, cb, options = {force: false}) {
+      this.webSocket.delete(funcName, () => {
+        cb({msg: 'deleted ' + funcName}) 
+      }, options.force)
   }
 
   aLeave(){
