@@ -24,9 +24,9 @@ const EXE = Object.freeze({
 
 ## example
 ```js
-vfaas.aPath(seg, {timeout?: 30000, time?: <iso>, exe: EXE.Best, dest?: '<end>'})
-
-vfaas.webSocket.send('req', JSON.stringify({ status: 55, data: [4, 0] }))
+vfaas.aPath(seg)
+const params = {timeout?: 30000, time?: <iso>, exe: EXE.Best, dest?: '<end>'}
+vfaas.webSocket.send('req', JSON.stringify({ status: 55, data: [4, 0] }), params)
 
 const req = (datum, params) => {
     console.log(params.time)

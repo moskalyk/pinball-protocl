@@ -31,12 +31,15 @@ class VFAASNetSocket {
       }
     }
     
-    send(channel, message) {
-        if(this.isFrontendClient) this.socket.send(JSON.stringify({channel: channel, msg: JSON.parse(message).msg, status: JSON.parse(message).status}))
-        else this.socket.write(JSON.stringify({channel: channel, msg: message}))
+    send(channel, message, params) {
+        const m = JSON.parse(message)
+        m.params = params
+        m.channel = channel
+        if(this.isFrontendClient) this.socket.send(JSON.stringify({channel: channel, msg: m, params: params, status: JSON.parse(message).status}))
+        else this.socket.write(JSON.stringify({channel: channel, msg: m, params: params}))
     }
     
-    on(channel, func, errCB) {
+    on(channel, func, params, errCB) {
         if(this.isFrontendClient){
             this.socket.onmessage = event => {
                 try{
@@ -50,7 +53,6 @@ class VFAASNetSocket {
             }
         } else {
             this.socket.on('data', (datum) => {
-                console.log()
                 // prevent double messages
                 const re = /\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}/g
                 let msg;
@@ -63,15 +65,16 @@ class VFAASNetSocket {
                 const processMessage = async (msg) => {
                     try {
                         const data = JSON.parse(msg)
+                        console.log('channel',data)
                         if(data.status == 201){
                             console.log(channel)
                             console.log(data)
                             this.socket.write(JSON.stringify({channel: '*', msg: 'message'}))
                         } else {
                             if(!this.deletedChannels.includes(data.channel) && channel == data.channel){
-                                func(data)
+                                func(data, data.params)
                             } else if(!this.deletedBroadcasts.includes(channel) && data.channel == '*') {
-                                func(data)
+                                func(data, data.params)
                             }
                         }
                     }catch(err){
@@ -122,9 +125,9 @@ class VFAASNet {
     }
   }
 
-  aPath(func, params) {
+  aPath(func) {
     let val = func.name
-    setTimeout(() => this.webSocket.on(val, (message) => func(message, params), this.bootCB), 0)
+    setTimeout(() => this.webSocket.on(val, (message, params) => {console.log('message',message);func(message, params)}, this.bootCB), 0)
     return this
   }
   

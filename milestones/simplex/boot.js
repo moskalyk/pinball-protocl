@@ -6,25 +6,25 @@ const vfaas = new VFAASNet({protocol: 'ws', host: '0.0.0.0', port: '8080'})
 
 const seg = async (datum, params) => {
     if(datum.status == StatusCodes.INIT_PASSWORD){
+       console.log('800')
        console.log(datum)
     } else if(datum.status == StatusCodes.WAKEUP){
         console.log('basic')
         console.log(datum)
-        console.log('params')
-        console.log(params)
     } else {
         console.log('other')
         console.log(datum)
+        console.log(params)
     }
 }
 
-const broadcast = (datum) => {
-    console.log('whowho')
-    console.log(datum)
-}
+// const broadcast = (datum) => {
+//     console.log('whowho')
+//     console.log(datum)
+// }
 
-vfaas.aPath(seg, {time: 5})
-vfaas.aPath(broadcast, {time: 5})
+vfaas.aPath(seg)
+// vfaas.aPath(broadcast)
 
 vfaas.aBoot((msg, err) => {
     console.log('listening')
@@ -33,7 +33,7 @@ vfaas.aBoot((msg, err) => {
         vfaas.anOmit('seg', (deleteMessage) => {
             console.log('ommitted successfully')
             console.log(deleteMessage)
-            vfaas.webSocket.send('seg', JSON.stringify({msg: 'sending msg', status: 52}))
+            vfaas.webSocket.send('seg', JSON.stringify({msg: 'sending msg', status: 52}), {time: 5})
         }, {force: false})
     } else if(err.code == ErrorCodes.BACKEND_PARSING_ERROR){
         console.log(err)
