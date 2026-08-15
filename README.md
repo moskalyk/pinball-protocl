@@ -28,15 +28,11 @@ const req = (datum, params) => {
     /*
         ** at a time and date
         let now = Date.now()
-        let fired = false
-        while(true && !fired){
+        do{
             if(now >= params.time){
-                if(params.exe == ExeCodes.BEST) {
-                    vfaas.webSocket.send(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
-                    fired = true
-                }
+                if(params.exe == ExeCodes.BEST) vfaas.webSocket.send(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
             }
-        }
+        }while(now < params.time)
     */
     
     /*
