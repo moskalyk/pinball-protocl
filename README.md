@@ -21,6 +21,7 @@ an open source portion of [vfaas.net](https://vfaas.net) for the purposes of sen
 
 const req = (datum, params) => {
     console.log(params.time)
+    console.log(params.timing)
     console.log(params.exe)
     console.log(params.dest)
     
@@ -38,7 +39,7 @@ const req = (datum, params) => {
         ** after prolonged time
         let now = Date.now()
         while(true){
-            if(now < (Date.now() - params.timeout)){
+            if(now < (Date.now() - params.timing)){
                 vfaas.aPath(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
             }
         }
@@ -46,14 +47,15 @@ const req = (datum, params) => {
     
 }
 
-vfaas.aPath(req, {timeout?: 30000, time?: <iso>, exe: EXE.Best, dest?: '<end>'})
-
+const form = './requestResponse.hoon'
+vfaas.aPath(req, form)
 
 vfaas.aBoot((boot, err) => {
     if(err) console.log(err)
     else {
         console.log('running')
-        vfaas.webSocket.send('req', JSON.stringify({ status: StatusCodes.TERMINAL_MESSAGE, data: [4, 0] }))
+        const params = {timing: Date.now() + 60*1000}
+        vfaas.webSocket.send('req', JSON.stringify({ status: StatusCodes.TERMINAL_MESSAGE, data: [4, 0] }), params)
     }
 })
 

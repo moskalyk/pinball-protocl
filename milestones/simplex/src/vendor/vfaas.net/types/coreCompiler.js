@@ -201,9 +201,11 @@ class CompilerProducer extends EventProducer {
     }
 }
 
-// module.exports = CompilerProducer
-
-export default CompilerProducer
+if(process) {
+    module.exports = CompilerProducer
+} else {
+ //export default CompilerProducer
+}
 
 /*
 +$  nutritionFact
