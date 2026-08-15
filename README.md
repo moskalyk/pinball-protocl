@@ -30,7 +30,7 @@ const req = (datum, params) => {
         let now = Date.now()
         while(true){
             if(now >= params.time){
-                if(params.exe == ExeCodes.BEST) vfaas.aPath(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
+                if(params.exe == ExeCodes.BEST) vfaas.webSocket.send(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
             }
         }
     */
