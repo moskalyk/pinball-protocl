@@ -75,33 +75,6 @@ class CompilerProducer extends EventProducer {
         const pattern = /(?<rune>\S+)\s{2}(?<rest>.+)[==]*/gm;
         const match = hoon.match(pattern)
         
-
-        /*
-        +$  recipe
-  $:  category=@ta
-      title=@ta
-      description=@ta
-      ingredients=(list ingredient)
-      nutritionFacts=nutritionFact
-      steps=(list @t)
-==
-+$  ingredient
-  $:  quantity=@ud
-      title=@t
-      measurement=measurement
-==
-+$  nutritionFact
-  $:  calories=@ud
-      protein=@ud
-      fat=@ud
-      carbohydrates=@ud
-      sodium=@ud
-==
-+$  measurement
-  $%  [%measured =unit]
-==
-
-        */
         switch(isRune){
             case runes[12]:
                 const corePattern = /\+\$(\s*)(?<simpleType>(.+)=(.+))|((\s{2})(?<type>.+)(\s+)\$\:(\s*(?<members>(.+)=(.+)))+|\+\$\s{2}(.+)\s*((\$\%)\s{2}(?<unions>.+)))|(\s{2}(?<unionSet>.+)\s{2}\?\((?<union>.+)\))/gm
@@ -207,12 +180,3 @@ if(process) {
  //export default CompilerProducer
 }
 
-/*
-+$  nutritionFact
-  $:  calories=@ud
-      protein=@ud
-      fat=@ud
-      carbohydrates=@ud
-      sodium=@ud
-==
-*/
