@@ -28,9 +28,13 @@ const req = (datum, params) => {
     /*
         ** at a time and date
         let now = Date.now()
-        while(true){
+        let fired = false
+        while(true && !fired){
             if(now >= params.time){
-                if(params.exe == ExeCodes.BEST) vfaas.webSocket.send(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
+                if(params.exe == ExeCodes.BEST) {
+                    vfaas.webSocket.send(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
+                    fired = true
+                }
             }
         }
     */
@@ -38,9 +42,11 @@ const req = (datum, params) => {
     /*
         ** after prolonged time
         let now = Date.now()
-        while(true){
+        let fired = false
+        while(true && !fired){
             if(now < (Date.now() - params.timing)){
                 vfaas.aPath(params.dest, JSON.stringify({status: StatusCodes.BASE_MESSAGE}))
+                fired = true
             }
         }
     */
