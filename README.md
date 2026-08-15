@@ -64,5 +64,27 @@ vfaas.aBoot((boot, err) => {
 
 ```
 
+## when `via`, `vf.push`
+
+```js
+// node 1
+vfaas.via('.nero.req.', JSON.stringify({bas: [8,2,5], status: 52}), {time: 5})
+
+// node 2
+const nero = async (datum, params, vf) => {
+    if(datum.status == StatusCodes.INIT_PASSWORD){
+       console.log(datum)
+    } else if(datum.status == StatusCodes.WAKEUP){
+        console.log('basic')
+        console.log(datum)
+    } else if(datum.status == StatusCode.TERMINAL_RESPONSE){
+        vf.push(datum.msg.path[datum.msg.current + 1], JSON.stringify({msg: 'a via', status: 25}), params)
+    }
+}
+
+// node 3
+const req = (datum, params) => ...
+```
+
 ## testing
 - written in [TricR](https://github.com/moskalyk/tricr) fashion using test configuration language (TCL) files
