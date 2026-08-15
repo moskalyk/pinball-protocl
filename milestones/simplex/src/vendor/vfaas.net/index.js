@@ -23,7 +23,6 @@ const typeChecker = (hoonCore, el) => { // need redo, with bunted default values
 
     if(!isRunArray){
         Object.values(el).forEach(e => {
-                // console.log(typeof e == 'object')
                 // check for inner @t elements : non-abstract of 'steps'
                 if(Array.isArray(e)){
                     e.forEach(q => {
@@ -119,7 +118,9 @@ class VFAASNetSocket {
                 this.socket = client
                 this.socket.connect(url.split(':')[1], url.split(':')[0], () => {
                     this.socket.write(JSON.stringify({status: 200, msg: 'Hello, server! From client.' + url.split(':')[1] + url.split(':')[0]}));
-                })
+                });
+                this.isFrontendClient = false
+
             }else {
                 this.socket = new WebSocket(url)
                 isFrontendClient = true
@@ -134,8 +135,8 @@ class VFAASNetSocket {
     }
     
     send(channel, message, params) {
-    
-    
+    var self = this;
+        console.log(self)
         // params
         if(!params.hasOwnProperty('time')) params.time = null
         if(!params.hasOwnProperty('timing')) params.timing = 0
@@ -162,12 +163,13 @@ class VFAASNetSocket {
             m.params = params
             m.channel = channel
             try {
-                const tempMCheck = m
-                delete tempMCheck.params
-                typeChecker(this.forms[channel].response, tempMCheck, true)
-                if(this.isFrontendClient) this.socket.send(JSON.stringify({channel: channel, msg: m, params: params, status: JSON.parse(message).status}))
-                else this.socket.write(JSON.stringify({channel: channel, msg: m, params: params}))
+                // const tempMCheck = m
+                // delete tempMCheck.params
+                // typeChecker(this.forms[channel].response, tempMCheck, true)
+                if(self.isFrontendClient) self.socket.send(JSON.stringify({channel: channel, msg: m, params: params, status: JSON.parse(message).status}))
+                else self.socket.write(JSON.stringify({channel: channel, msg: m, params: params}))
             } catch(err){
+                console.log(err)
                 throw new Error('bad response')
             }
 
@@ -175,6 +177,7 @@ class VFAASNetSocket {
     }
     
     on(channel, func, errCB, typeJSON) {
+        var self = this
         if(this.isFrontendClient){
             this.socket.onmessage = event => {
                 try{
@@ -206,9 +209,11 @@ class VFAASNetSocket {
                             this.socket.write(JSON.stringify({channel: '*', msg: 'message'}))
                         } else {
                             if(!this.deletedChannels.includes(data.channel) && channel == data.channel){
-                                func(data, data.params)
+                                self.push = self.send
+                                func(data, data.params, self)
                             } else if(!this.deletedBroadcasts.includes(channel) && data.channel == '*') {
-                                func(data, data.params)
+                                self.push = self.send
+                                func(data, data.params, self)
                             }
                         }
                     }catch(err){
@@ -226,6 +231,8 @@ class VFAASNetSocket {
             })
         }
     }
+    
+    
     
     delete(channel, cb, force) {
         this.deletedChannels.push(channel)
@@ -261,9 +268,7 @@ class VFAASNet {
 
   aPath(func, form) {
     do{
-        console.log('running')
     }while(this.bootCB == null)
-    console.log('outta', this.bootCB)
         if(form){
             const fs = require('fs')
             const CompilerProducer = require('./types/coreCompiler.js')
@@ -273,7 +278,7 @@ class VFAASNet {
                 const cp = new CompilerProducer()
                 const typeJSON = cp.compiler(c.toString(), 0)
 			    let val = func.name
-                this.webSocket.on(val, (message, params) => {
+                this.webSocket.on(val, (message, params, send) => {
                     console.log('message',message);
                     try {
                         if(typeJSON.hasOwnProperty('response')) {
@@ -284,13 +289,14 @@ class VFAASNet {
 			            throw new Error('bad request shape')
 			        }
 			        if(!isValid) throw new Error('bad request shape')
-                    func(message, params)
+                    func(message, params, send)
                 },this.bootCB, typeJSON)
                 return this
 	        })
 	    } else {
             let val = func.name
-            setTimeout(() => this.webSocket.on(val, (message, params) => {console.log('message',message);func(message, params)}, this.bootCB), 0)
+            console.log('name',val)
+            setTimeout(() => this.webSocket.on(val, (message, params, send) => {console.log('message',message);func(message, params, send)}, this.bootCB), 0)
             return this
         }
   }
@@ -300,6 +306,36 @@ class VFAASNet {
         cb({msg: 'deleted ' + funcName}) 
       }, options.force)
   }
+  
+  via(vias, datum, params){
+        const viasParsed = vias.split('.').slice(1,vias.split('.').length-1)
+        const d = JSON.parse(datum)
+        
+        console.log(d)
+        d['msg'] = {}
+        d['msg'].path = viasParsed
+        d['msg'].current = viasParsed.indexOf(d.msg.path[0])
+        
+        // viasParsed.map((val) => {
+            // console.log('val',val)
+            this.webSocket.send(d.msg.path[0], JSON.stringify(d), params)
+            // this.webSocket.on(val, (message, params) => {
+                // console.log('message',message);
+          //       try {
+          //           if(typeJSON.hasOwnProperty('response')) {
+          //               typeChecker({request: typeJSON.request}, {request: message}, true)
+          //           } 
+		        // }catch(err){
+		        //     console.log(err)
+		        //     throw new Error('bad request shape')
+		        // }
+		        // if(!isValid) throw new Error('bad request shape')
+		        // console.log(datum)
+                // func(datum, params)
+            // }, this.bootCB, {})
+        // })
+        
+    }
 
   aLeave(){
       if(this.webSocket.isFrontendClient){
