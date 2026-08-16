@@ -4,7 +4,7 @@ an open source portion of [vfaas.net](https://vfaas.net) for the purposes of sen
 ## features
 - [ ] `onion-like`: send data and have the data split autonomously, chipping away at work load, and passing on to next node, dynamically, with references sent back to origin in socket programming.
 - [x] `fire & forget`: with a named addressable feed of content, recieve result in an 'EventEmitter' ish-or-as mailbox.
-- [ ] `model-layer propogation`: callable across interfaces extending the paradigm of gossip key-value store from vfaas, allow a stringified to propagate across a subnet.
+- [x] `model-layer propogation`: callable across interfaces extending the paradigm of gossip key-value store from vfaas, allow a stringified to propagate across a subnet.
 - [ ] `edge catchup & backup`: think of this as load balancing with redundancy. multiple vm's backing eachother if a node is down connected, or, requires round-robin load balancing from an orchestrator node.
 - [ ] `multi-language`: 1. javascript (backend & browser) & 2. python (gpu connectivity) 3. yadda (questions?)
 
