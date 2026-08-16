@@ -23,7 +23,7 @@ const seg = async (datum, params) => {
 //     console.log(datum)
 // }
 
-const form = './src/types/reqResponse.hoon'
+const form = './src/types/reqPushResponse.hoon'
 // const form = './src/types/req.hoon'
 
 vfaas.aPath(seg, form)
