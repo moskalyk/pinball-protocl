@@ -123,12 +123,14 @@ class CompilerProducer extends EventProducer {
                         if(m.groups.members){
                             const listMatch = [...m.groups.members.matchAll(listPattern)]
                             if(listMatch.length > 0){
+                                console.log()
                                 if(!types[m.groups.type.trim()][m.groups.members.split('=')[0]]) {
                                     types[m.groups.type.trim()][m.groups.members.split('=')[0]] = {}
                                     types[m.groups.type.trim()][m.groups.members.split('=')[0]]['list'] = listMatch[0][1]
                                 }
                             }
                         }
+                        // console.log(types)
                         return m.groups.members&&!types[m.groups.members.split('=')[0]]&&!m.groups.members.includes('list')
                     })
                     const ingreeds = matching.filter(m => {

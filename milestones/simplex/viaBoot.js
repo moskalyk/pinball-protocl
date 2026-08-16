@@ -18,17 +18,17 @@ const seg = async (datum, params) => {
     }
 }
 
-// const form = './src/types/reqResponse.hoon'
-const form = './src/types/req.hoon'
+const form = './src/types/reqPushResponse.hoon'
+// const form = './src/types/req.hoon'
 
-vfaas.aPath(seg)
+vfaas.aPath(seg, form)
 
 vfaas.aBoot((msg, err) => {
     console.log('listening')
     console.log(err)
     
     if(!err){
-        vfaas.via('.nero.req.', JSON.stringify({bas: [8,2,5], status: 52}), {time: 5})
+        vfaas.via('.nero.req.', JSON.stringify({status: 52, msg: 'hi'}), {time: 5})
     } else if(err.code == ErrorCodes.BACKEND_PARSING_ERROR){
         console.log(err)
     }

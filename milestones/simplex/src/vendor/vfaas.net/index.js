@@ -9,7 +9,9 @@ const auraChecker = (aura) => {
 let isValid = true
 const typeChecker = (hoonCore, el) => { // need redo, with bunted default values too
     let isRunArray = false
+    
     Object.entries(hoonCore).forEach(hc => {
+
         if(Object.keys(hc[1])[0] == 'list' && Array.isArray(el[hc[0]])){
             el[hc[0]].forEach(e => {
                 const obj = {}
@@ -17,7 +19,8 @@ const typeChecker = (hoonCore, el) => { // need redo, with bunted default values
                 typeChecker(hoonCore, obj, isValid)
                 isRunArray = true
             })
-        } 
+        } else {
+        }
 
     })
 
@@ -58,38 +61,52 @@ const typeChecker = (hoonCore, el) => { // need redo, with bunted default values
                     })
                 } else if(e != 'type'){
                 e&&Object.entries(e).forEach(([k,v]) => {
-                    const kvalue = hoonCore[Object.keys(el)[0]][k]
-                    if(kvalue != 'object' && !kvalue.list){
-                        if(typeof hoonCore[kvalue] == 'object'){
-                            typeChecker(hoonCore[kvalue], v, isValid)
-                        }
-                        else if(typeof v != auraChecker(kvalue)){
-                            console.log('falsifyyy')
-
-                            throw new Error(kvalue)
-                        }
-                    } else if(kvalue && typeof v == 'object'){
-                        if(v[k] == auraChecker(kvalue)){ // check for non-abstract: recipe & nutritionFacts
-                            if(kvalue.list) {
+                    if(e == 'undefined'){
+                        
+                    }
+                    else if(typeof Object.values(el)[0] == auraChecker(Object.keys(el)[0])){
+                    
+                    }else {
+                        const kvalue = hoonCore[Object.keys(el)[0]][k]
+                        if(kvalue && kvalue != 'object' && !kvalue.list){
+                            const indy = Object.values(hoonCore[Object.keys(el)[0]]).indexOf(kvalue)
+                            if(typeof hoonCore[kvalue] == 'object'){
+                                typeChecker(hoonCore[kvalue], v, isValid)
+                            }
+                            else if(kvalue == 'parameters'){
+                                typeChecker(hoonCore.request['params'], v, isValid)
+                            }
+                            else if(typeof v != auraChecker(kvalue)){
+                                typeChecker(hoonCore.request[kvalue], v, isValid)
+                                // throw new Error(kvalue) // todo, simple pass
+                            }
+                        } else if(kvalue && typeof v == 'object'){
+                            if(v[k] == auraChecker(kvalue)){ // check for non-abstract: recipe & nutritionFacts
+                                if(kvalue.list) {
+                                    let obj = {}
+                                    obj[k] = v
+                                    obj[kvalue.list] = 'type'
+                                    typeChecker(hoonCore, obj, isValid)
+                                } else {
                                 let obj = {}
-                                obj[k] = v
-                                obj[kvalue.list] = 'type'
-                                typeChecker(hoonCore, obj, isValid)
-                            } else {
-                            let obj = {}
-                                obj[kvalue] = v
-                                typeChecker(hoonCore, obj, isValid)
+                                    obj[kvalue] = v
+                                    typeChecker(hoonCore, obj, isValid)
+                                }
+                            } else if(v){
+                                if(typeof v == auraChecker(kvalue)){
+                                    isValid = true
+                                } else {
+                                    isValid = false
+                                    console.log('falsifyyy')
+                                    throw new Error(kvalue)
+                                }
                             }
-                        } else if(v){
-                            if(typeof v == auraChecker(kvalue)){
-                                isValid = true
-                            } else {
-                                isValid = false
-                                console.log('falsifyyy')
-                                throw new Error(kvalue)
-                            }
+                        } else if (!kvalue) {
+                            throw new Error(k)
+
                         }
                     }
+
                 })
             }
         })
@@ -134,9 +151,7 @@ class VFAASNetSocket {
       }
     }
     
-    send(channel, message, params) {
-    var self = this;
-        console.log(self)
+    send(channel, message, params, aVia = false) {
         // params
         if(!params.hasOwnProperty('time')) params.time = null
         if(!params.hasOwnProperty('timing')) params.timing = 0
@@ -153,8 +168,13 @@ class VFAASNetSocket {
             const typeJSON = cp.compiler(c.toString(), 0)
             
 			try {
+			    // console.log(params)
 			    typeChecker(typeJSON, {parameters: params}, true)
+			    
 			}catch(err){
+						    // console.log(params)
+
+			    // console.log(err)
 			    throw new Error('bad parameters')
 			}
 
@@ -163,11 +183,14 @@ class VFAASNetSocket {
             m.params = params
             m.channel = channel
             try {
-                // const tempMCheck = m
-                // delete tempMCheck.params
-                // typeChecker(this.forms[channel].response, tempMCheck, true)
-                if(self.isFrontendClient) self.socket.send(JSON.stringify({channel: channel, msg: m, params: params, status: JSON.parse(message).status}))
-                else self.socket.write(JSON.stringify({channel: channel, msg: m, params: params}))
+                
+                if(!aVia) {
+                    const current = JSON.parse(message).push.current
+                    const priorChannel = JSON.parse(message).push.path[current]
+                    typeChecker(this.forms[priorChannel], {response: m}, true)
+                }
+                if(this.isFrontendClient) this.socket.send(JSON.stringify({channel: channel, msg: m, params: params, status: JSON.parse(message).status}))
+                else this.socket.write(JSON.stringify({channel: channel, msg: m, params: params}))
             } catch(err){
                 console.log(err)
                 throw new Error('bad response')
@@ -182,7 +205,7 @@ class VFAASNetSocket {
             this.socket.onmessage = event => {
                 try{
                     const d = JSON.parse(event.data)
-                    console.log()
+                    // console.log()
                     if(d.channel == channel) func(d)
                     else if(d.channel == '*') func(d)
                 }catch(err){
@@ -276,14 +299,22 @@ class VFAASNet {
             fs.readFile(__dirname +'/../../../' +form, (err, c) => {
                 if(err) {console.log(err);throw new Error('error reading form')}
                 const cp = new CompilerProducer()
+                console.log(c.toString())
                 const typeJSON = cp.compiler(c.toString(), 0)
+                
 			    let val = func.name
                 this.webSocket.on(val, (message, params, send) => {
                     console.log('message',message);
                     try {
-                        if(typeJSON.hasOwnProperty('response')) {
-                            typeChecker({request: typeJSON.request}, {request: message}, true)
+                        if(typeJSON.hasOwnProperty('parameters')) {
+                            // process.exit()
+                            typeChecker(typeJSON, {request: message}, true)
                         } 
+                        if(typeJSON.hasOwnProperty('response')) {
+                            // process.exit()
+                            typeChecker(typeJSON, {request: message}, true)
+                        } 
+                       
 			        }catch(err){
 			            console.log(err)
 			            throw new Error('bad request shape')
@@ -295,7 +326,6 @@ class VFAASNet {
 	        })
 	    } else {
             let val = func.name
-            console.log('name',val)
             setTimeout(() => this.webSocket.on(val, (message, params, send) => {console.log('message',message);func(message, params, send)}, this.bootCB), 0)
             return this
         }
@@ -307,34 +337,32 @@ class VFAASNet {
       }, options.force)
   }
   
-  via(vias, datum, params){
+  via(vias, datum, params, form = './types/reqPushResponse.hoon'){
+        //\.(\w+)
         const viasParsed = vias.split('.').slice(1,vias.split('.').length-1)
         const d = JSON.parse(datum)
-        
-        console.log(d)
-        d['msg'] = {}
-        d['msg'].path = viasParsed
-        d['msg'].current = viasParsed.indexOf(d.msg.path[0])
-        
-        // viasParsed.map((val) => {
-            // console.log('val',val)
-            this.webSocket.send(d.msg.path[0], JSON.stringify(d), params)
-            // this.webSocket.on(val, (message, params) => {
-                // console.log('message',message);
-          //       try {
-          //           if(typeJSON.hasOwnProperty('response')) {
-          //               typeChecker({request: typeJSON.request}, {request: message}, true)
-          //           } 
-		        // }catch(err){
-		        //     console.log(err)
-		        //     throw new Error('bad request shape')
-		        // }
-		        // if(!isValid) throw new Error('bad request shape')
-		        // console.log(datum)
-                // func(datum, params)
-            // }, this.bootCB, {})
-        // })
-        
+        d['push'] = {}
+        d.push.path = viasParsed
+        d.push.current = viasParsed.indexOf(d.push.path[0])
+        const fs = require('fs')
+        const CompilerProducer = require('./types/coreCompiler.js')
+
+        fs.readFile(__dirname +'/../../' +form, (err, c) => {
+            if(err) {console.log(err);throw new Error('error reading form')}
+            const cp = new CompilerProducer()
+            const typeJSON = cp.compiler(c.toString(), 0)
+            try {
+                if(typeJSON.hasOwnProperty('response')) {
+                    typeChecker(typeJSON, {request: d}, false)
+                } 
+	        }catch(err){
+	            console.log(err)
+	            throw new Error('bad request shape')
+	        }
+	        if(!isValid) throw new Error('bad request shape')
+	        console.log('isValid', isValid)
+            this.webSocket.send(d.push.path[0], JSON.stringify(d), params, true)
+        })
     }
 
   aLeave(){
